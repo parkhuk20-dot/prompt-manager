@@ -50,7 +50,52 @@ def show_menu():
     print("7. 즐겨찾기 목록")
     print("0. 종료")
 
+# ------------------------------------------------------
+# 프롬프트 추가
+# ------------------------------------------------------
 
+def get_non_empty_input(prompt_text):
+    """빈 값이 입력되면 다시 입력받는 헬퍼 함수"""
+    while True:
+        value = input(prompt_text).strip()
+        if value:
+            return value
+        print("입력값이 비어있습니다. 다시 입력해주세요.")
+
+
+def choose_category():
+    """카테고리를 목록에서 선택하거나 직접 입력"""
+    print("\n카테고리 선택:")
+    for i, cat in enumerate(CATEGORIES, start=1):
+        print(f"{i}) {cat}")
+    print("0) 직접 입력")
+
+    choice = input("선택: ").strip()
+
+    if choice == "0":
+        return get_non_empty_input("카테고리 직접 입력: ")
+
+    if choice.isdigit() and 1 <= int(choice) <= len(CATEGORIES):
+        return CATEGORIES[int(choice) - 1]
+
+    print("잘못된 선택입니다. 기본값 '기타'로 설정합니다.")
+    return "기타"
+
+
+def add_prompt():
+    print("\n=== 프롬프트 추가 ===")
+    title = get_non_empty_input("제목: ")
+    content = get_non_empty_input("내용: ")
+    category = choose_category()
+
+    prompts.append({
+        "title": title,
+        "content": content,
+        "category": category,
+        "favorite": False,
+    })
+
+    print("\n프롬프트가 추가되었습니다!")
 # ------------------------------------------------------
 # 메인 루프
 # ------------------------------------------------------
@@ -63,7 +108,9 @@ def main():
         if choice == "0":
             print("프로그램을 종료합니다.")
             break
-        elif choice in ("1", "2", "3", "4", "5", "6", "7"):
+        elif choice == "1":
+            add_prompt()
+        elif choice in ("2", "3", "4", "5", "6", "7"):
             print("(아직 구현 예정인 기능입니다)")
         else:
             print("잘못된 입력입니다. 다시 선택해주세요.")
