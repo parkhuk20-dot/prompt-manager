@@ -50,6 +50,7 @@ def show_menu():
     print("7. 즐겨찾기 목록")
     print("0. 종료")
 
+
 # ------------------------------------------------------
 # 프롬프트 추가
 # ------------------------------------------------------
@@ -96,7 +97,8 @@ def add_prompt():
     })
 
     print("\n프롬프트가 추가되었습니다!")
-    
+
+
 # ------------------------------------------------------
 # 프롬프트 목록
 # ------------------------------------------------------
@@ -114,6 +116,140 @@ def show_list():
 
     print(f"\n총 {len(prompts)}개의 프롬프트")
 
+
+# ------------------------------------------------------
+# 카테고리별 조회
+# ------------------------------------------------------
+
+def show_by_category():
+    print("\n=== 카테고리별 조회 ===")
+    for i, cat in enumerate(CATEGORIES, start=1):
+        print(f"{i}) {cat}")
+
+    choice = input("선택: ").strip()
+
+    if not choice.isdigit() or not (1 <= int(choice) <= len(CATEGORIES)):
+        print("잘못된 선택입니다.")
+        return
+
+    selected_category = CATEGORIES[int(choice) - 1]
+    filtered = [p for p in prompts if p["category"] == selected_category]
+
+    print(f"\n[{selected_category}] 카테고리 프롬프트:")
+
+    if not filtered:
+        print("해당 카테고리에 프롬프트가 없습니다.")
+        return
+
+    for i, p in enumerate(filtered, start=1):
+        star = " ⭐" if p["favorite"] else ""
+        print(f"{i}. {p['title']}{star}")
+
+    print(f"\n총 {len(filtered)}개의 프롬프트")
+
+
+# ------------------------------------------------------
+# 프롬프트 검색
+# ------------------------------------------------------
+
+def search_prompt():
+    print("\n=== 프롬프트 검색 ===")
+    keyword = get_non_empty_input("검색어: ")
+
+    results = [
+        p for p in prompts
+        if keyword in p["title"] or keyword in p["content"]
+    ]
+
+    if not results:
+        print("\n검색 결과가 없습니다.")
+        return
+
+    print("\n검색 결과:")
+    for i, p in enumerate(results, start=1):
+        star = " ⭐" if p["favorite"] else ""
+        print(f"{i}. [{p['category']}] {p['title']}{star}")
+
+    print(f"\n{len(results)}개의 프롬프트를 찾았습니다.")
+
+
+# ------------------------------------------------------
+# 프롬프트 상세 보기
+# ------------------------------------------------------
+
+def show_detail():
+    print("\n=== 프롬프트 상세 보기 ===")
+
+    if not prompts:
+        print("등록된 프롬프트가 없습니다.")
+        return
+
+    show_list()
+    choice = input("\n번호 입력: ").strip()
+
+    if not choice.isdigit() or not (1 <= int(choice) <= len(prompts)):
+        print("잘못된 번호입니다.")
+        return
+
+    p = prompts[int(choice) - 1]
+    star = "⭐" if p["favorite"] else "즐겨찾기 안 됨"
+
+    print("─" * 30)
+    print(f"제목: {p['title']}")
+    print(f"카테고리: {p['category']}")
+    print(f"즐겨찾기: {star}")
+    print("─" * 30)
+    print("내용:")
+    print(p["content"])
+    print("─" * 30)
+
+
+# ------------------------------------------------------
+# 즐겨찾기 관리 (추가/해제)
+# ------------------------------------------------------
+
+def toggle_favorite():
+    print("\n=== 즐겨찾기 관리 ===")
+
+    if not prompts:
+        print("등록된 프롬프트가 없습니다.")
+        return
+
+    show_list()
+    choice = input("\n프롬프트 번호 입력: ").strip()
+
+    if not choice.isdigit() or not (1 <= int(choice) <= len(prompts)):
+        print("잘못된 번호입니다.")
+        return
+
+    p = prompts[int(choice) - 1]
+    p["favorite"] = not p["favorite"]
+
+    if p["favorite"]:
+        print(f"\n'{p['title']}' 프롬프트를 즐겨찾기에 추가했습니다!")
+    else:
+        print(f"\n'{p['title']}' 프롬프트를 즐겨찾기에서 해제했습니다!")
+
+
+# ------------------------------------------------------
+# 즐겨찾기 목록
+# ------------------------------------------------------
+
+def show_favorites():
+    print("\n=== 즐겨찾기 목록 ===")
+
+    favorites = [p for p in prompts if p["favorite"]]
+
+    if not favorites:
+        print("즐겨찾기한 프롬프트가 없습니다.")
+        return
+
+    for i, p in enumerate(favorites, start=1):
+        print(f"{i}. [{p['category']}] {p['title']} ⭐")
+
+    print(f"\n총 {len(favorites)}개의 즐겨찾기")
+
+
 # ------------------------------------------------------
 # 메인 루프
 # ------------------------------------------------------
@@ -130,8 +266,16 @@ def main():
             add_prompt()
         elif choice == "2":
             show_list()
-        elif choice in ("3", "4", "5", "6", "7"):
-            print("(아직 구현 예정인 기능입니다)")
+        elif choice == "3":
+            show_by_category()
+        elif choice == "4":
+            search_prompt()
+        elif choice == "5":
+            show_detail()
+        elif choice == "6":
+            toggle_favorite()
+        elif choice == "7":
+            show_favorites()
         else:
             print("잘못된 입력입니다. 다시 선택해주세요.")
 
