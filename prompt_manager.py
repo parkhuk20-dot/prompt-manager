@@ -45,30 +45,13 @@ prompts = [
 
 
 # ------------------------------------------------------
-# 메뉴 출력
-# ------------------------------------------------------
-
-def show_menu():
-    print("\n=== 나만의 프롬프트 관리 ===")
-    print("1. 프롬프트 추가")
-    print("2. 프롬프트 목록")
-    print("3. 카테고리별 조회")
-    print("4. 프롬프트 검색")
-    print("5. 프롬프트 상세 보기")
-    print("6. 즐겨찾기 관리")
-    print("7. 즐겨찾기 목록")
-    print("8. JSON으로 저장")
-    print("9. JSON 불러오기")
-    print("10. Markdown으로 내보내기")
-    print("11. 프롬프트 수정")
-    print("12. 프롬프트 삭제")
-    print("13. 조회수 Top 목록")
-    print("0. 종료")
-
-
-# ------------------------------------------------------
 # 공용 헬퍼 함수
 # ------------------------------------------------------
+
+def clear_screen():
+    """터미널 화면을 지워서 새 화면처럼 보이게 함"""
+    os.system("cls" if os.name == "nt" else "clear")
+
 
 def get_non_empty_input(prompt_text):
     """빈 값이 입력되면 다시 입력받는 헬퍼 함수"""
@@ -82,23 +65,26 @@ def get_non_empty_input(prompt_text):
 def get_multiline_input(guide_text, allow_empty=False):
     """여러 줄 입력을 받는 함수.
     Enter는 줄바꿈, 새 줄에 '/s'만 입력하면 저장(종료).
-    allow_empty=True이면 빈 입력도 허용(수정 시 '유지'로 사용)."""
+    allow_empty=True이면 첫 줄 Enter로 바로 유지 가능."""
     print(guide_text)
-    print("(여러 줄 입력 가능 · 입력을 마치려면 새 줄에 /s 를 입력하세요)")
+    print("(여러 줄 입력 가능 · 저장: /s · 첫 줄 Enter: 기존 내용 유지)")
 
+    lines = []
     while True:
-        lines = []
-        while True:
-            line = input()
-            if line.strip() == "/s":
-                break
-            lines.append(line)
+        line = input()
+        if line.strip() == "/s":
+            break
+        if line.strip() == "" and not lines and allow_empty:
+            return ""
+        lines.append(line)
 
-        content = "\n".join(lines).strip()
+    content = "\n".join(lines).strip()
 
-        if content or allow_empty:
-            return content
+    if not content and not allow_empty:
         print("내용이 비어있습니다. 다시 입력해주세요.")
+        return get_multiline_input(guide_text, allow_empty)
+
+    return content
 
 
 def choose_category():
@@ -112,7 +98,6 @@ def choose_category():
 
     if choice == "0":
         return get_non_empty_input("카테고리 직접 입력: ")
-
     if choice.isdigit() and 1 <= int(choice) <= len(CATEGORIES):
         return CATEGORIES[int(choice) - 1]
 
@@ -121,32 +106,32 @@ def choose_category():
 
 
 def print_prompt_line(index, p):
-    """목록 한 줄 출력 형식 통일 (카테고리 너비 고정으로 제목 시작 칸 맞춤)"""
+    """목록 한 줄 출력 형식 통일"""
     star = " ⭐" if p["favorite"] else ""
     category = f"[{p['category']}]"
     print(f"{index:>2}. {category:<10} {p['title']}{star}")
 
 
 # ------------------------------------------------------
-# 상세 보기 화면 (브라우징용)
+# 상세 보기 화면
 # ------------------------------------------------------
 
 def show_detail_view(p):
-    """프롬프트 상세 정보를 출력하고 조회수를 올린다.
-    반환값: 'back'(이전 화면으로) 또는 'menu'(전체 메뉴로)"""
+    """프롬프트 상세 정보를 출력하고 조회수를 올린다."""
+    clear_screen()
     p["views"] += 1
-
     star = "⭐" if p["favorite"] else "없음"
 
-    print("\n" + "─" * 30)
-    print(f"제목: {p['title']}")
-    print(f"카테고리: {p['category']}")
-    print(f"즐겨찾기: {star}")
-    print(f"조회수: {p['views']}")
-    print("─" * 30)
-    print("내용:")
+    print("─" * 40)
+    print(f"  제목     : {p['title']}")
+    print(f"  카테고리 : {p['category']}")
+    print(f"  즐겨찾기 : {star}")
+    print(f"  조회수   : {p['views']}")
+    print("─" * 40)
+    print("  내용")
+    print("─" * 40)
     print(p["content"])
-    print("─" * 30)
+    print("─" * 40)
 
     while True:
         choice = input("\nb) 뒤로  0) 전체 메뉴\n선택: ").strip().lower()
@@ -158,10 +143,10 @@ def show_detail_view(p):
 
 
 def browse_prompts(items, title):
-    """프롬프트 목록을 보여주고, 번호 선택 시 상세 보기로 진입하는 화면.
-    반환값: 'back'(이전 화면으로) 또는 'menu'(전체 메뉴로)"""
+    """프롬프트 목록을 보여주고, 번호 선택 시 상세 보기로 진입."""
     while True:
-        print(f"\n=== {title} ===")
+        clear_screen()
+        print(f"=== {title} ===\n")
 
         if not items:
             print("표시할 프롬프트가 없습니다.")
@@ -187,9 +172,31 @@ def browse_prompts(items, title):
             result = show_detail_view(items[int(choice) - 1])
             if result == "menu":
                 return "menu"
-            # 'back'이면 루프 계속 → 목록 다시 표시
         else:
             print("잘못된 입력입니다.")
+
+
+# ------------------------------------------------------
+# 메뉴 출력
+# ------------------------------------------------------
+
+def show_menu():
+    clear_screen()
+    print("=== 나만의 프롬프트 관리 ===\n")
+    print("1. 프롬프트 추가")
+    print("2. 프롬프트 목록")
+    print("3. 카테고리별 조회")
+    print("4. 프롬프트 검색")
+    print("5. 프롬프트 상세 보기")
+    print("6. 즐겨찾기 관리")
+    print("7. 즐겨찾기 목록")
+    print("8. JSON으로 저장")
+    print("9. JSON 불러오기")
+    print("10. Markdown으로 내보내기")
+    print("11. 프롬프트 수정")
+    print("12. 프롬프트 삭제")
+    print("13. 조회수 Top 목록")
+    print("\n0. 종료")
 
 
 # ------------------------------------------------------
@@ -197,9 +204,10 @@ def browse_prompts(items, title):
 # ------------------------------------------------------
 
 def add_prompt():
-    print("\n=== 프롬프트 추가 ===")
+    clear_screen()
+    print("=== 프롬프트 추가 ===\n")
     title = get_non_empty_input("제목: ")
-    content = get_multiline_input("내용:")
+    content = get_multiline_input("\n내용:")
     category = choose_category()
 
     prompts.append({
@@ -210,11 +218,12 @@ def add_prompt():
         "views": 0,
     })
 
-    print("\n프롬프트가 추가되었습니다!")
+    print("\n✅ 프롬프트가 추가되었습니다!")
+    input("\nEnter를 누르면 메뉴로 돌아갑니다...")
 
 
 # ------------------------------------------------------
-# 프롬프트 목록 (브라우징 모드)
+# 프롬프트 목록
 # ------------------------------------------------------
 
 def show_list():
@@ -222,38 +231,38 @@ def show_list():
 
 
 # ------------------------------------------------------
-# 카테고리별 조회 (브라우징 모드)
+# 카테고리별 조회
 # ------------------------------------------------------
 
 def show_by_category():
     while True:
-        print("\n=== 카테고리별 조회 ===")
+        clear_screen()
+        print("=== 카테고리별 조회 ===\n")
         for i, cat in enumerate(CATEGORIES, start=1):
             print(f"{i}) {cat}")
 
         choice = input("\n번호) 카테고리 선택  b) 뒤로  0) 전체 메뉴\n선택: ").strip().lower()
 
-        if choice == "0" or choice == "b":
+        if choice in ("0", "b"):
             return
-
         if choice.isdigit() and 1 <= int(choice) <= len(CATEGORIES):
             selected_category = CATEGORIES[int(choice) - 1]
             filtered = [p for p in prompts if p["category"] == selected_category]
             result = browse_prompts(filtered, f"[{selected_category}] 카테고리 프롬프트")
             if result == "menu":
                 return
-            # 'back'이면 카테고리 선택 화면으로 돌아옴
         else:
             print("잘못된 입력입니다.")
 
 
 # ------------------------------------------------------
-# 프롬프트 검색 (브라우징 모드)
+# 프롬프트 검색
 # ------------------------------------------------------
 
 def search_prompt():
     while True:
-        print("\n=== 프롬프트 검색 ===")
+        clear_screen()
+        print("=== 프롬프트 검색 ===\n")
         keyword = input("검색어 (b: 뒤로, 0: 전체 메뉴): ").strip()
 
         if keyword == "0" or keyword.lower() == "b":
@@ -270,11 +279,10 @@ def search_prompt():
         result = browse_prompts(results, f"'{keyword}' 검색 결과")
         if result == "menu":
             return
-        # 'back'이면 검색어 입력으로 돌아옴
 
 
 # ------------------------------------------------------
-# 프롬프트 상세 보기 (메뉴 5번: 전체 목록에서 선택)
+# 프롬프트 상세 보기 (메뉴 5번)
 # ------------------------------------------------------
 
 def show_detail():
@@ -282,15 +290,17 @@ def show_detail():
 
 
 # ------------------------------------------------------
-# 즐겨찾기 관리 (추가/해제)
+# 즐겨찾기 관리
 # ------------------------------------------------------
 
 def select_prompt_index(title):
-    """목록을 보여주고 번호를 선택받아 인덱스를 반환. b/0이면 None."""
-    print(f"\n=== {title} ===")
+    """목록을 보여주고 번호를 선택받아 인덱스를 반환."""
+    clear_screen()
+    print(f"=== {title} ===\n")
 
     if not prompts:
         print("등록된 프롬프트가 없습니다.")
+        input("\nEnter를 누르면 메뉴로 돌아갑니다...")
         return None
 
     for i, p in enumerate(prompts, start=1):
@@ -316,13 +326,14 @@ def toggle_favorite():
     p["favorite"] = not p["favorite"]
 
     if p["favorite"]:
-        print(f"\n'{p['title']}' 프롬프트를 즐겨찾기에 추가했습니다!")
+        print(f"\n✅ '{p['title']}' 프롬프트를 즐겨찾기에 추가했습니다!")
     else:
-        print(f"\n'{p['title']}' 프롬프트를 즐겨찾기에서 해제했습니다!")
+        print(f"\n❌ '{p['title']}' 프롬프트를 즐겨찾기에서 해제했습니다!")
+    input("\nEnter를 누르면 메뉴로 돌아갑니다...")
 
 
 # ------------------------------------------------------
-# 즐겨찾기 목록 (브라우징 모드)
+# 즐겨찾기 목록
 # ------------------------------------------------------
 
 def show_favorites():
@@ -331,13 +342,12 @@ def show_favorites():
 
 
 # ------------------------------------------------------
-# 내보낼 프롬프트 선택 헬퍼 (JSON/MD 공용)
+# 내보낼 프롬프트 선택 헬퍼
 # ------------------------------------------------------
 
 def select_prompts_for_export(title):
-    """내보낼 프롬프트를 선택. 단일(3), 복수(1,3,5), 전체(a) 지원.
-    선택된 프롬프트 리스트를 반환. 취소 시 None."""
-    print(f"\n=== {title} ===")
+    clear_screen()
+    print(f"=== {title} ===\n")
 
     if not prompts:
         print("등록된 프롬프트가 없습니다.")
@@ -381,45 +391,50 @@ def save_prompts_json():
         return
 
     try:
-        # 기존 파일이 있으면 불러와서 합치기
         existing = []
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, "r", encoding="utf-8") as f:
                 existing = json.load(f)
 
-        # 이미 저장된 항목(제목 기준)은 중복 저장 방지
         existing_titles = {p["title"] for p in existing}
         new_items = [p for p in selected if p["title"] not in existing_titles]
         duplicates = [p for p in selected if p["title"] in existing_titles]
-
         merged = existing + new_items
 
         with open(DATA_FILE, "w", encoding="utf-8") as f:
             json.dump(merged, f, ensure_ascii=False, indent=2)
 
-        print(f"\n'{DATA_FILE}'에 {len(new_items)}개 추가 저장되었습니다.")
+        print(f"\n✅ '{DATA_FILE}'에 {len(new_items)}개 추가 저장되었습니다.")
         print(f"(전체 저장 수: {len(merged)}개)")
-
         if duplicates:
             print(f"이미 저장된 항목(스킵): {', '.join(p['title'] for p in duplicates)}")
 
     except (OSError, json.JSONDecodeError) as e:
         print(f"저장에 실패했습니다: {e}")
 
+    input("\nEnter를 누르면 메뉴로 돌아갑니다...")
+
+
 def load_prompts_json():
     global prompts
+    clear_screen()
+    print("=== JSON 불러오기 ===\n")
 
     if not os.path.exists(DATA_FILE):
-        print(f"\n'{DATA_FILE}' 파일이 존재하지 않습니다.")
+        print(f"'{DATA_FILE}' 파일이 존재하지 않습니다.")
+        input("\nEnter를 누르면 메뉴로 돌아갑니다...")
         return
 
     try:
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             loaded = json.load(f)
         prompts = loaded
-        print(f"\n'{DATA_FILE}'에서 {len(loaded)}개의 프롬프트를 불러왔습니다.")
+        print(f"✅ '{DATA_FILE}'에서 {len(loaded)}개의 프롬프트를 불러왔습니다.")
     except (OSError, json.JSONDecodeError) as e:
         print(f"불러오기에 실패했습니다: {e}")
+
+    input("\nEnter를 누르면 메뉴로 돌아갑니다...")
+
 
 # ------------------------------------------------------
 # 보너스1: 카테고리별 Markdown 내보내기
@@ -449,7 +464,8 @@ def export_markdown():
                 f.write("---\n\n")
         exported_count += 1
 
-    print(f"\n'{EXPORT_DIR}/' 폴더에 카테고리별 {exported_count}개의 Markdown 파일을 내보냈습니다.")
+    print(f"\n✅ '{EXPORT_DIR}/' 폴더에 카테고리별 {exported_count}개의 Markdown 파일을 내보냈습니다.")
+    input("\nEnter를 누르면 메뉴로 돌아갑니다...")
 
 
 # ------------------------------------------------------
@@ -462,62 +478,23 @@ def edit_prompt():
         return
 
     p = prompts[index]
-    print(f"\n'{p['title']}' 프롬프트를 수정합니다.")
-    print("(변경하지 않으려면 그냥 Enter로 넘어가세요)")
+    clear_screen()
+    print(f"=== 프롬프트 수정 ===\n")
+    print("(변경하지 않으려면 그냥 Enter로 넘어가세요)\n")
 
     # 제목 수정
-    print(f"\n[현재 제목]\n{p['title']}")
+    print(f"[현재 제목]\n{p['title']}")
     new_title = input("새 제목 (Enter: 유지): ").strip()
 
     # 내용 수정
     print(f"\n[현재 내용]\n{p['content']}")
-    print("\n새 내용 입력:")
-    print("(여러 줄 입력 가능 · /s 입력 시 저장 · Enter만 치면 기존 내용 유지)")
-
-    lines = []
-    while True:
-        line = input()
-        if line.strip() == "/s":
-            break
-        if line.strip() == "" and not lines:
-            # 첫 줄에서 바로 Enter → 기존 내용 유지
-            lines = None
-            break
-        lines.append(line)
+    new_content = get_multiline_input("\n새 내용:", allow_empty=True)
 
     # 카테고리 수정
     print(f"\n[현재 카테고리]\n{p['category']}")
     change_category = input("카테고리를 변경할까요? (y/N): ").strip().lower()
 
-    # 실제 반영
-    if new_title:
-        p["title"] = new_title
-
-    if lines is not None:
-        new_content = "\n".join(lines).strip()
-        if new_content:
-            p["content"] = new_content
-
-    if change_category == "y":
-        p["category"] = choose_category()
-
-    print(f"\n'{p['title']}' 프롬프트가 수정되었습니다!")
-    index = select_prompt_index("프롬프트 수정")
-    if index is None:
-        return
-
-    p = prompts[index]
-    print(f"\n'{p['title']}' 프롬프트를 수정합니다.")
-    print("(변경하지 않으려면 그냥 Enter / 내용은 /s만 입력)")
-
-    new_title = input(f"제목 [{p['title']}]: ").strip()
-
-    new_content = get_multiline_input(
-        f"내용 [현재 {len(p['content'])}자]:", allow_empty=True
-    )
-
-    change_category = input("카테고리를 변경할까요? (y/N): ").strip().lower()
-
+    # 반영
     if new_title:
         p["title"] = new_title
     if new_content:
@@ -525,7 +502,8 @@ def edit_prompt():
     if change_category == "y":
         p["category"] = choose_category()
 
-    print(f"\n'{p['title']}' 프롬프트가 수정되었습니다!")
+    print(f"\n✅ '{p['title']}' 프롬프트가 수정되었습니다!")
+    input("\nEnter를 누르면 메뉴로 돌아갑니다...")
 
 
 # ------------------------------------------------------
@@ -538,17 +516,24 @@ def delete_prompt():
         return
 
     p = prompts[index]
-    confirm = input(f"\n'{p['title']}' 프롬프트를 정말 삭제할까요? (y/N): ").strip().lower()
+    clear_screen()
+    print(f"=== 프롬프트 삭제 ===\n")
+    print(f"제목: {p['title']}")
+    print(f"카테고리: {p['category']}")
+
+    confirm = input(f"\n정말 삭제할까요? (y/N): ").strip().lower()
 
     if confirm == "y":
         prompts.pop(index)
-        print(f"\n'{p['title']}' 프롬프트가 삭제되었습니다.")
+        print(f"\n✅ '{p['title']}' 프롬프트가 삭제되었습니다.")
     else:
         print("\n삭제를 취소했습니다.")
 
+    input("\nEnter를 누르면 메뉴로 돌아갑니다...")
+
 
 # ------------------------------------------------------
-# 보너스2: 조회수 Top 목록 (브라우징 모드)
+# 보너스2: 조회수 Top 목록
 # ------------------------------------------------------
 
 def show_top_viewed():
@@ -563,10 +548,11 @@ def show_top_viewed():
 def main():
     while True:
         show_menu()
-        choice = input("선택: ").strip()
+        choice = input("\n선택: ").strip()
 
         if choice == "0":
-            print("프로그램을 종료합니다.")
+            clear_screen()
+            print("프로그램을 종료합니다. 안녕히 가세요!")
             break
         elif choice == "1":
             add_prompt()
@@ -596,6 +582,7 @@ def main():
             show_top_viewed()
         else:
             print("잘못된 입력입니다. 다시 선택해주세요.")
+            input("Enter를 누르면 계속합니다...")
 
 
 if __name__ == "__main__":
