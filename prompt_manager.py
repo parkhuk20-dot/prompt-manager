@@ -380,28 +380,30 @@ def save_prompts_json():
         return
 
     try:
+        # 기존 파일이 있으면 불러와서 합치기
+        existing = []
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, "r", encoding="utf-8") as f:
+                existing = json.load(f)
+
+        # 이미 저장된 항목(제목 기준)은 중복 저장 방지
+        existing_titles = {p["title"] for p in existing}
+        new_items = [p for p in selected if p["title"] not in existing_titles]
+        duplicates = [p for p in selected if p["title"] in existing_titles]
+
+        merged = existing + new_items
+
         with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(selected, f, ensure_ascii=False, indent=2)
-        print(f"\n'{DATA_FILE}' 파일에 {len(selected)}개의 프롬프트를 저장했습니다.")
-    except OSError as e:
-        print(f"저장에 실패했습니다: {e}")
+            json.dump(merged, f, ensure_ascii=False, indent=2)
 
+        print(f"\n'{DATA_FILE}'에 {len(new_items)}개 추가 저장되었습니다.")
+        print(f"(전체 저장 수: {len(merged)}개)")
 
-def load_prompts_json():
-    global prompts
+        if duplicates:
+            print(f"이미 저장된 항목(스킵): {', '.join(p['title'] for p in duplicates)}")
 
-    if not os.path.exists(DATA_FILE):
-        print(f"\n'{DATA_FILE}' 파일이 존재하지 않습니다.")
-        return
-
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            loaded = json.load(f)
-        prompts = loaded
-        print(f"\n'{DATA_FILE}'에서 {len(loaded)}개의 프롬프트를 불러왔습니다.")
     except (OSError, json.JSONDecodeError) as e:
-        print(f"불러오기에 실패했습니다: {e}")
-
+        print(f"저장에 실패했습니다: {e}")
 
 # ------------------------------------------------------
 # 보너스1: 카테고리별 Markdown 내보내기
