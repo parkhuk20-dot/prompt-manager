@@ -537,8 +537,34 @@ def delete_prompt():
 # ------------------------------------------------------
 
 def show_top_viewed():
-    sorted_prompts = sorted(prompts, key=lambda p: p["views"], reverse=True)
-    browse_prompts(sorted_prompts, "조회수 Top 목록")
+    while True:
+        clear_screen()
+        print("=== 조회수 Top 목록 ===\n")
+
+        if not prompts:
+            print("등록된 프롬프트가 없습니다.")
+            input("\nEnter를 누르면 메뉴로 돌아갑니다...")
+            return
+
+        sorted_prompts = sorted(prompts, key=lambda p: p["views"], reverse=True)
+
+        for i, p in enumerate(sorted_prompts, start=1):
+            star = " ⭐" if p["favorite"] else ""
+            category = f"[{p['category']}]"
+            print(f"{i:>2}. {category:<10} {p['title']}{star} · 조회수 : {p['views']}회")
+
+        print(f"\n총 {len(sorted_prompts)}개의 프롬프트")
+
+        choice = input("\n번호) 상세 보기  b) 뒤로  0) 전체 메뉴\n선택: ").strip().lower()
+
+        if choice == "0" or choice == "b":
+            return
+        if choice.isdigit() and 1 <= int(choice) <= len(sorted_prompts):
+            result = show_detail_view(sorted_prompts[int(choice) - 1])
+            if result == "menu":
+                return
+        else:
+            print("잘못된 입력입니다.")
 
 
 # ------------------------------------------------------
