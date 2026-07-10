@@ -463,6 +463,51 @@ def edit_prompt():
 
     p = prompts[index]
     print(f"\n'{p['title']}' 프롬프트를 수정합니다.")
+    print("(변경하지 않으려면 그냥 Enter로 넘어가세요)")
+
+    # 제목 수정
+    print(f"\n[현재 제목]\n{p['title']}")
+    new_title = input("새 제목 (Enter: 유지): ").strip()
+
+    # 내용 수정
+    print(f"\n[현재 내용]\n{p['content']}")
+    print("\n새 내용 입력:")
+    print("(여러 줄 입력 가능 · /s 입력 시 저장 · Enter만 치면 기존 내용 유지)")
+
+    lines = []
+    while True:
+        line = input()
+        if line.strip() == "/s":
+            break
+        if line.strip() == "" and not lines:
+            # 첫 줄에서 바로 Enter → 기존 내용 유지
+            lines = None
+            break
+        lines.append(line)
+
+    # 카테고리 수정
+    print(f"\n[현재 카테고리]\n{p['category']}")
+    change_category = input("카테고리를 변경할까요? (y/N): ").strip().lower()
+
+    # 실제 반영
+    if new_title:
+        p["title"] = new_title
+
+    if lines is not None:
+        new_content = "\n".join(lines).strip()
+        if new_content:
+            p["content"] = new_content
+
+    if change_category == "y":
+        p["category"] = choose_category()
+
+    print(f"\n'{p['title']}' 프롬프트가 수정되었습니다!")
+    index = select_prompt_index("프롬프트 수정")
+    if index is None:
+        return
+
+    p = prompts[index]
+    print(f"\n'{p['title']}' 프롬프트를 수정합니다.")
     print("(변경하지 않으려면 그냥 Enter / 내용은 /s만 입력)")
 
     new_title = input(f"제목 [{p['title']}]: ").strip()
