@@ -121,9 +121,10 @@ def choose_category():
 
 
 def print_prompt_line(index, p):
-    """목록 한 줄 출력 형식 통일"""
+    """목록 한 줄 출력 형식 통일 (카테고리 너비 고정으로 제목 시작 칸 맞춤)"""
     star = " ⭐" if p["favorite"] else ""
-    print(f"{index}. [{p['category']}] {p['title']}{star}")
+    category = f"[{p['category']}]"
+    print(f"{index:>2}. {category:<10} {p['title']}{star}")
 
 
 # ------------------------------------------------------
