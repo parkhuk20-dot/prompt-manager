@@ -209,17 +209,3 @@ git config --global --list
 
 ---
 
-## 9. 과제 목표 달성 요약
-
-- [x] VSCode에서 Python 파일 생성 및 실행
-- [x] 터미널에서 Python/Git 버전 확인 및 설정 점검
-- [x] 파이썬 기초 문법(변수, 조건문, 반복문, 함수, 리스트/딕셔너리) 활용
-- [x] Git의 개념과 필요성 이해
-- [x] init, add, commit, push, pull, checkout, clone, merge 사용
-- [x] 브랜치 생성 및 병합
-- [x] GitHub에 코드 업로드 및 관리
-- [x] 함수별 기능 분리
-- [x] 기본 프롬프트 3개 이상 등록
-- [x] 10개 이상 의미 있는 커밋
-- [x] 보너스 1(JSON 저장/불러오기, Markdown 내보내기) 완료
-- [x] 보너스 2(CRUD, 조회수 기록/정렬) 완료
