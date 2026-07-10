@@ -79,6 +79,28 @@ def get_non_empty_input(prompt_text):
         print("입력값이 비어있습니다. 다시 입력해주세요.")
 
 
+def get_multiline_input(guide_text, allow_empty=False):
+    """여러 줄 입력을 받는 함수.
+    Enter는 줄바꿈, 새 줄에 '/s'만 입력하면 저장(종료).
+    allow_empty=True이면 빈 입력도 허용(수정 시 '유지'로 사용)."""
+    print(guide_text)
+    print("(여러 줄 입력 가능 · 입력을 마치려면 새 줄에 /s 를 입력하세요)")
+
+    while True:
+        lines = []
+        while True:
+            line = input()
+            if line.strip() == "/s":
+                break
+            lines.append(line)
+
+        content = "\n".join(lines).strip()
+
+        if content or allow_empty:
+            return content
+        print("내용이 비어있습니다. 다시 입력해주세요.")
+
+
 def choose_category():
     """카테고리를 목록에서 선택하거나 직접 입력"""
     print("\n카테고리 선택:")
@@ -98,21 +120,75 @@ def choose_category():
     return "기타"
 
 
-def select_prompt_number():
-    """목록을 보여주고 유효한 프롬프트 번호를 입력받는 헬퍼 함수.
-    유효하면 인덱스(0부터 시작)를, 아니면 None을 반환."""
-    if not prompts:
-        print("등록된 프롬프트가 없습니다.")
-        return None
+def print_prompt_line(index, p):
+    """목록 한 줄 출력 형식 통일"""
+    star = " ⭐" if p["favorite"] else ""
+    print(f"{index}. [{p['category']}] {p['title']}{star}")
 
-    show_list()
-    choice = input("\n번호 입력: ").strip()
 
-    if not choice.isdigit() or not (1 <= int(choice) <= len(prompts)):
-        print("잘못된 번호입니다.")
-        return None
+# ------------------------------------------------------
+# 상세 보기 화면 (브라우징용)
+# ------------------------------------------------------
 
-    return int(choice) - 1
+def show_detail_view(p):
+    """프롬프트 상세 정보를 출력하고 조회수를 올린다.
+    반환값: 'back'(이전 화면으로) 또는 'menu'(전체 메뉴로)"""
+    p["views"] += 1
+
+    star = "⭐" if p["favorite"] else "없음"
+
+    print("\n" + "─" * 30)
+    print(f"제목: {p['title']}")
+    print(f"카테고리: {p['category']}")
+    print(f"즐겨찾기: {star}")
+    print(f"조회수: {p['views']}")
+    print("─" * 30)
+    print("내용:")
+    print(p["content"])
+    print("─" * 30)
+
+    while True:
+        choice = input("\nb) 뒤로  0) 전체 메뉴\n선택: ").strip().lower()
+        if choice == "b":
+            return "back"
+        if choice == "0":
+            return "menu"
+        print("잘못된 입력입니다.")
+
+
+def browse_prompts(items, title):
+    """프롬프트 목록을 보여주고, 번호 선택 시 상세 보기로 진입하는 화면.
+    반환값: 'back'(이전 화면으로) 또는 'menu'(전체 메뉴로)"""
+    while True:
+        print(f"\n=== {title} ===")
+
+        if not items:
+            print("표시할 프롬프트가 없습니다.")
+            while True:
+                choice = input("\nb) 뒤로  0) 전체 메뉴\n선택: ").strip().lower()
+                if choice == "b":
+                    return "back"
+                if choice == "0":
+                    return "menu"
+                print("잘못된 입력입니다.")
+
+        for i, p in enumerate(items, start=1):
+            print_prompt_line(i, p)
+        print(f"\n총 {len(items)}개의 프롬프트")
+
+        choice = input("\n번호) 상세 보기  b) 뒤로  0) 전체 메뉴\n선택: ").strip().lower()
+
+        if choice == "0":
+            return "menu"
+        if choice == "b":
+            return "back"
+        if choice.isdigit() and 1 <= int(choice) <= len(items):
+            result = show_detail_view(items[int(choice) - 1])
+            if result == "menu":
+                return "menu"
+            # 'back'이면 루프 계속 → 목록 다시 표시
+        else:
+            print("잘못된 입력입니다.")
 
 
 # ------------------------------------------------------
@@ -122,7 +198,7 @@ def select_prompt_number():
 def add_prompt():
     print("\n=== 프롬프트 추가 ===")
     title = get_non_empty_input("제목: ")
-    content = get_non_empty_input("내용: ")
+    content = get_multiline_input("내용:")
     category = choose_category()
 
     prompts.append({
@@ -137,114 +213,101 @@ def add_prompt():
 
 
 # ------------------------------------------------------
-# 프롬프트 목록
+# 프롬프트 목록 (브라우징 모드)
 # ------------------------------------------------------
 
 def show_list():
-    print("\n=== 프롬프트 목록 ===")
-
-    if not prompts:
-        print("등록된 프롬프트가 없습니다.")
-        return
-
-    for i, p in enumerate(prompts, start=1):
-        star = " ⭐" if p["favorite"] else ""
-        print(f"{i}. [{p['category']}] {p['title']}{star}")
-
-    print(f"\n총 {len(prompts)}개의 프롬프트")
+    browse_prompts(prompts, "프롬프트 목록")
 
 
 # ------------------------------------------------------
-# 카테고리별 조회
+# 카테고리별 조회 (브라우징 모드)
 # ------------------------------------------------------
 
 def show_by_category():
-    print("\n=== 카테고리별 조회 ===")
-    for i, cat in enumerate(CATEGORIES, start=1):
-        print(f"{i}) {cat}")
+    while True:
+        print("\n=== 카테고리별 조회 ===")
+        for i, cat in enumerate(CATEGORIES, start=1):
+            print(f"{i}) {cat}")
 
-    choice = input("선택: ").strip()
+        choice = input("\n번호) 카테고리 선택  b) 뒤로  0) 전체 메뉴\n선택: ").strip().lower()
 
-    if not choice.isdigit() or not (1 <= int(choice) <= len(CATEGORIES)):
-        print("잘못된 선택입니다.")
-        return
+        if choice == "0" or choice == "b":
+            return
 
-    selected_category = CATEGORIES[int(choice) - 1]
-    filtered = [p for p in prompts if p["category"] == selected_category]
-
-    print(f"\n[{selected_category}] 카테고리 프롬프트:")
-
-    if not filtered:
-        print("해당 카테고리에 프롬프트가 없습니다.")
-        return
-
-    for i, p in enumerate(filtered, start=1):
-        star = " ⭐" if p["favorite"] else ""
-        print(f"{i}. {p['title']}{star}")
-
-    print(f"\n총 {len(filtered)}개의 프롬프트")
+        if choice.isdigit() and 1 <= int(choice) <= len(CATEGORIES):
+            selected_category = CATEGORIES[int(choice) - 1]
+            filtered = [p for p in prompts if p["category"] == selected_category]
+            result = browse_prompts(filtered, f"[{selected_category}] 카테고리 프롬프트")
+            if result == "menu":
+                return
+            # 'back'이면 카테고리 선택 화면으로 돌아옴
+        else:
+            print("잘못된 입력입니다.")
 
 
 # ------------------------------------------------------
-# 프롬프트 검색
+# 프롬프트 검색 (브라우징 모드)
 # ------------------------------------------------------
 
 def search_prompt():
-    print("\n=== 프롬프트 검색 ===")
-    keyword = get_non_empty_input("검색어: ")
+    while True:
+        print("\n=== 프롬프트 검색 ===")
+        keyword = input("검색어 (b: 뒤로, 0: 전체 메뉴): ").strip()
 
-    results = [
-        p for p in prompts
-        if keyword in p["title"] or keyword in p["content"]
-    ]
+        if keyword == "0" or keyword.lower() == "b":
+            return
+        if not keyword:
+            print("검색어가 비어있습니다.")
+            continue
 
-    if not results:
-        print("\n검색 결과가 없습니다.")
-        return
+        results = [
+            p for p in prompts
+            if keyword in p["title"] or keyword in p["content"]
+        ]
 
-    print("\n검색 결과:")
-    for i, p in enumerate(results, start=1):
-        star = " ⭐" if p["favorite"] else ""
-        print(f"{i}. [{p['category']}] {p['title']}{star}")
-
-    print(f"\n{len(results)}개의 프롬프트를 찾았습니다.")
+        result = browse_prompts(results, f"'{keyword}' 검색 결과")
+        if result == "menu":
+            return
+        # 'back'이면 검색어 입력으로 돌아옴
 
 
 # ------------------------------------------------------
-# 프롬프트 상세 보기 (조회수 기록 포함)
+# 프롬프트 상세 보기 (메뉴 5번: 전체 목록에서 선택)
 # ------------------------------------------------------
 
 def show_detail():
-    print("\n=== 프롬프트 상세 보기 ===")
-
-    index = select_prompt_number()
-    if index is None:
-        return
-
-    p = prompts[index]
-    p["views"] += 1  # 조회수 증가
-
-    star = "⭐" if p["favorite"] else "없음"
-
-    print("─" * 30)
-    print(f"제목: {p['title']}")
-    print(f"카테고리: {p['category']}")
-    print(f"즐겨찾기: {star}")
-    print(f"조회수: {p['views']}")
-    print("─" * 30)
-    print("내용:")
-    print(p["content"])
-    print("─" * 30)
+    show_list()
 
 
 # ------------------------------------------------------
 # 즐겨찾기 관리 (추가/해제)
 # ------------------------------------------------------
 
-def toggle_favorite():
-    print("\n=== 즐겨찾기 관리 ===")
+def select_prompt_index(title):
+    """목록을 보여주고 번호를 선택받아 인덱스를 반환. b/0이면 None."""
+    print(f"\n=== {title} ===")
 
-    index = select_prompt_number()
+    if not prompts:
+        print("등록된 프롬프트가 없습니다.")
+        return None
+
+    for i, p in enumerate(prompts, start=1):
+        print_prompt_line(i, p)
+
+    choice = input("\n번호 입력 (b: 뒤로, 0: 전체 메뉴): ").strip().lower()
+
+    if choice in ("b", "0"):
+        return None
+    if choice.isdigit() and 1 <= int(choice) <= len(prompts):
+        return int(choice) - 1
+
+    print("잘못된 번호입니다.")
+    return None
+
+
+def toggle_favorite():
+    index = select_prompt_index("즐겨찾기 관리")
     if index is None:
         return
 
@@ -258,22 +321,53 @@ def toggle_favorite():
 
 
 # ------------------------------------------------------
-# 즐겨찾기 목록
+# 즐겨찾기 목록 (브라우징 모드)
 # ------------------------------------------------------
 
 def show_favorites():
-    print("\n=== 즐겨찾기 목록 ===")
-
     favorites = [p for p in prompts if p["favorite"]]
+    browse_prompts(favorites, "즐겨찾기 목록")
 
-    if not favorites:
-        print("즐겨찾기한 프롬프트가 없습니다.")
-        return
 
-    for i, p in enumerate(favorites, start=1):
-        print(f"{i}. [{p['category']}] {p['title']} ⭐")
+# ------------------------------------------------------
+# 내보낼 프롬프트 선택 헬퍼 (JSON/MD 공용)
+# ------------------------------------------------------
 
-    print(f"\n총 {len(favorites)}개의 즐겨찾기")
+def select_prompts_for_export(title):
+    """내보낼 프롬프트를 선택. 단일(3), 복수(1,3,5), 전체(a) 지원.
+    선택된 프롬프트 리스트를 반환. 취소 시 None."""
+    print(f"\n=== {title} ===")
+
+    if not prompts:
+        print("등록된 프롬프트가 없습니다.")
+        return None
+
+    for i, p in enumerate(prompts, start=1):
+        print_prompt_line(i, p)
+
+    raw = input(
+        "\n내보낼 번호 입력 (쉼표로 여러 개: 1,3,5 / a: 전체 / b: 뒤로): "
+    ).strip().lower()
+
+    if raw in ("b", "0"):
+        return None
+    if raw == "a":
+        return list(prompts)
+
+    selected = []
+    for part in raw.split(","):
+        part = part.strip()
+        if part.isdigit() and 1 <= int(part) <= len(prompts):
+            selected.append(prompts[int(part) - 1])
+        else:
+            print(f"잘못된 번호가 포함되어 있습니다: '{part}'")
+            return None
+
+    if not selected:
+        print("선택된 프롬프트가 없습니다.")
+        return None
+
+    return selected
 
 
 # ------------------------------------------------------
@@ -281,10 +375,14 @@ def show_favorites():
 # ------------------------------------------------------
 
 def save_prompts_json():
+    selected = select_prompts_for_export("JSON으로 저장")
+    if selected is None:
+        return
+
     try:
         with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(prompts, f, ensure_ascii=False, indent=2)
-        print(f"\n'{DATA_FILE}' 파일에 {len(prompts)}개의 프롬프트를 저장했습니다.")
+            json.dump(selected, f, ensure_ascii=False, indent=2)
+        print(f"\n'{DATA_FILE}' 파일에 {len(selected)}개의 프롬프트를 저장했습니다.")
     except OSError as e:
         print(f"저장에 실패했습니다: {e}")
 
@@ -310,17 +408,15 @@ def load_prompts_json():
 # ------------------------------------------------------
 
 def export_markdown():
-    print("\n=== 카테고리별 Markdown 내보내기 ===")
-
-    if not prompts:
-        print("등록된 프롬프트가 없습니다.")
+    selected = select_prompts_for_export("Markdown으로 내보내기")
+    if selected is None:
         return
 
     os.makedirs(EXPORT_DIR, exist_ok=True)
 
     exported_count = 0
     for category in CATEGORIES:
-        filtered = [p for p in prompts if p["category"] == category]
+        filtered = [p for p in selected if p["category"] == category]
         if not filtered:
             continue
 
@@ -343,18 +439,19 @@ def export_markdown():
 # ------------------------------------------------------
 
 def edit_prompt():
-    print("\n=== 프롬프트 수정 ===")
-
-    index = select_prompt_number()
+    index = select_prompt_index("프롬프트 수정")
     if index is None:
         return
 
     p = prompts[index]
     print(f"\n'{p['title']}' 프롬프트를 수정합니다.")
-    print("(변경하지 않으려면 그냥 Enter를 누르세요)")
+    print("(변경하지 않으려면 그냥 Enter / 내용은 /s만 입력)")
 
     new_title = input(f"제목 [{p['title']}]: ").strip()
-    new_content = input("내용 (Enter 시 유지): ").strip()
+
+    new_content = get_multiline_input(
+        f"내용 [현재 {len(p['content'])}자]:", allow_empty=True
+    )
 
     change_category = input("카테고리를 변경할까요? (y/N): ").strip().lower()
 
@@ -373,9 +470,7 @@ def edit_prompt():
 # ------------------------------------------------------
 
 def delete_prompt():
-    print("\n=== 프롬프트 삭제 ===")
-
-    index = select_prompt_number()
+    index = select_prompt_index("프롬프트 삭제")
     if index is None:
         return
 
@@ -390,23 +485,12 @@ def delete_prompt():
 
 
 # ------------------------------------------------------
-# 보너스2: 조회수 Top 목록
+# 보너스2: 조회수 Top 목록 (브라우징 모드)
 # ------------------------------------------------------
 
 def show_top_viewed():
-    print("\n=== 조회수 Top 목록 ===")
-
-    if not prompts:
-        print("등록된 프롬프트가 없습니다.")
-        return
-
     sorted_prompts = sorted(prompts, key=lambda p: p["views"], reverse=True)
-
-    for i, p in enumerate(sorted_prompts, start=1):
-        star = " ⭐" if p["favorite"] else ""
-        print(f"{i}. [{p['category']}] {p['title']}{star} - 조회수 {p['views']}")
-
-    print(f"\n총 {len(sorted_prompts)}개의 프롬프트 (조회수 높은 순)")
+    browse_prompts(sorted_prompts, "조회수 Top 목록")
 
 
 # ------------------------------------------------------
