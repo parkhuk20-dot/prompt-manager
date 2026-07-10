@@ -7,11 +7,17 @@ GenAI 프롬프트(텍스트/이미지/영상/페르소나/자동화 등)를
 실행: python3 prompt_manager.py
 """
 
+import json
+import os
+
 # ------------------------------------------------------
 # 상수 / 기본 데이터
 # ------------------------------------------------------
 
 CATEGORIES = ["텍스트 생성", "이미지 생성", "영상 생성", "페르소나", "자동화", "기타"]
+
+DATA_FILE = "prompts.json"
+EXPORT_DIR = "exports"
 
 prompts = [
     {
@@ -19,18 +25,21 @@ prompts = [
         "content": "당신은 10년 경력의 전문 블로거입니다. 주어진 주제에 대해 SEO에 최적화된 블로그 글을 작성해주세요.",
         "category": "텍스트 생성",
         "favorite": False,
+        "views": 0,
     },
     {
         "title": "SULSI 광고 영상 씬 프롬프트",
         "content": "2D 애니메이션 스타일, 신카이 마코토 감성의 4씬 30초 음료 광고. 극한의 청량감을 시각적으로 표현.",
         "category": "영상 생성",
         "favorite": False,
+        "views": 0,
     },
     {
         "title": "노코드 자동화 시나리오 설계",
         "content": "Google Sheets에 새 행이 추가되면 OpenAI로 요약을 생성하고 Discord 웹훅으로 전송하는 Make 시나리오를 설계해주세요.",
         "category": "자동화",
         "favorite": False,
+        "views": 0,
     },
 ]
 
@@ -48,13 +57,17 @@ def show_menu():
     print("5. 프롬프트 상세 보기")
     print("6. 즐겨찾기 관리")
     print("7. 즐겨찾기 목록")
-    print("8. Json으로 저장")
-    print("9. Json에서 불러오기")
+    print("8. JSON으로 저장")
+    print("9. JSON 불러오기")
+    print("10. Markdown으로 내보내기")
+    print("11. 프롬프트 수정")
+    print("12. 프롬프트 삭제")
+    print("13. 조회수 Top 목록")
     print("0. 종료")
 
 
 # ------------------------------------------------------
-# 프롬프트 추가
+# 공용 헬퍼 함수
 # ------------------------------------------------------
 
 def get_non_empty_input(prompt_text):
@@ -85,6 +98,27 @@ def choose_category():
     return "기타"
 
 
+def select_prompt_number():
+    """목록을 보여주고 유효한 프롬프트 번호를 입력받는 헬퍼 함수.
+    유효하면 인덱스(0부터 시작)를, 아니면 None을 반환."""
+    if not prompts:
+        print("등록된 프롬프트가 없습니다.")
+        return None
+
+    show_list()
+    choice = input("\n번호 입력: ").strip()
+
+    if not choice.isdigit() or not (1 <= int(choice) <= len(prompts)):
+        print("잘못된 번호입니다.")
+        return None
+
+    return int(choice) - 1
+
+
+# ------------------------------------------------------
+# 프롬프트 추가
+# ------------------------------------------------------
+
 def add_prompt():
     print("\n=== 프롬프트 추가 ===")
     title = get_non_empty_input("제목: ")
@@ -96,6 +130,7 @@ def add_prompt():
         "content": content,
         "category": category,
         "favorite": False,
+        "views": 0,
     })
 
     print("\n프롬프트가 추가되었습니다!")
@@ -176,30 +211,26 @@ def search_prompt():
 
 
 # ------------------------------------------------------
-# 프롬프트 상세 보기
+# 프롬프트 상세 보기 (조회수 기록 포함)
 # ------------------------------------------------------
 
 def show_detail():
     print("\n=== 프롬프트 상세 보기 ===")
 
-    if not prompts:
-        print("등록된 프롬프트가 없습니다.")
+    index = select_prompt_number()
+    if index is None:
         return
 
-    show_list()
-    choice = input("\n번호 입력: ").strip()
+    p = prompts[index]
+    p["views"] += 1  # 조회수 증가
 
-    if not choice.isdigit() or not (1 <= int(choice) <= len(prompts)):
-        print("잘못된 번호입니다.")
-        return
-
-    p = prompts[int(choice) - 1]
-    star = "⭐" if p["favorite"] else "즐겨찾기 안 됨"
+    star = "⭐" if p["favorite"] else "없음"
 
     print("─" * 30)
     print(f"제목: {p['title']}")
     print(f"카테고리: {p['category']}")
     print(f"즐겨찾기: {star}")
+    print(f"조회수: {p['views']}")
     print("─" * 30)
     print("내용:")
     print(p["content"])
@@ -213,18 +244,11 @@ def show_detail():
 def toggle_favorite():
     print("\n=== 즐겨찾기 관리 ===")
 
-    if not prompts:
-        print("등록된 프롬프트가 없습니다.")
+    index = select_prompt_number()
+    if index is None:
         return
 
-    show_list()
-    choice = input("\n프롬프트 번호 입력: ").strip()
-
-    if not choice.isdigit() or not (1 <= int(choice) <= len(prompts)):
-        print("잘못된 번호입니다.")
-        return
-
-    p = prompts[int(choice) - 1]
+    p = prompts[index]
     p["favorite"] = not p["favorite"]
 
     if p["favorite"]:
@@ -251,15 +275,10 @@ def show_favorites():
 
     print(f"\n총 {len(favorites)}개의 즐겨찾기")
 
+
 # ------------------------------------------------------
-# 보너스1: JSON 저장
+# 보너스1: JSON 저장 / 불러오기
 # ------------------------------------------------------
-
-import json
-import os
-
-DATA_FILE = "prompts.json"
-
 
 def save_prompts_json():
     try:
@@ -284,6 +303,112 @@ def load_prompts_json():
         print(f"\n'{DATA_FILE}'에서 {len(loaded)}개의 프롬프트를 불러왔습니다.")
     except (OSError, json.JSONDecodeError) as e:
         print(f"불러오기에 실패했습니다: {e}")
+
+
+# ------------------------------------------------------
+# 보너스1: 카테고리별 Markdown 내보내기
+# ------------------------------------------------------
+
+def export_markdown():
+    print("\n=== 카테고리별 Markdown 내보내기 ===")
+
+    if not prompts:
+        print("등록된 프롬프트가 없습니다.")
+        return
+
+    os.makedirs(EXPORT_DIR, exist_ok=True)
+
+    exported_count = 0
+    for category in CATEGORIES:
+        filtered = [p for p in prompts if p["category"] == category]
+        if not filtered:
+            continue
+
+        filename = os.path.join(EXPORT_DIR, f"{category}.md")
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(f"# {category} 프롬프트 모음\n\n")
+            for p in filtered:
+                star = " ⭐" if p["favorite"] else ""
+                f.write(f"## {p['title']}{star}\n\n")
+                f.write(f"- 조회수: {p['views']}\n\n")
+                f.write(f"{p['content']}\n\n")
+                f.write("---\n\n")
+        exported_count += 1
+
+    print(f"\n'{EXPORT_DIR}/' 폴더에 카테고리별 {exported_count}개의 Markdown 파일을 내보냈습니다.")
+
+
+# ------------------------------------------------------
+# 보너스2: 프롬프트 수정
+# ------------------------------------------------------
+
+def edit_prompt():
+    print("\n=== 프롬프트 수정 ===")
+
+    index = select_prompt_number()
+    if index is None:
+        return
+
+    p = prompts[index]
+    print(f"\n'{p['title']}' 프롬프트를 수정합니다.")
+    print("(변경하지 않으려면 그냥 Enter를 누르세요)")
+
+    new_title = input(f"제목 [{p['title']}]: ").strip()
+    new_content = input("내용 (Enter 시 유지): ").strip()
+
+    change_category = input("카테고리를 변경할까요? (y/N): ").strip().lower()
+
+    if new_title:
+        p["title"] = new_title
+    if new_content:
+        p["content"] = new_content
+    if change_category == "y":
+        p["category"] = choose_category()
+
+    print(f"\n'{p['title']}' 프롬프트가 수정되었습니다!")
+
+
+# ------------------------------------------------------
+# 보너스2: 프롬프트 삭제
+# ------------------------------------------------------
+
+def delete_prompt():
+    print("\n=== 프롬프트 삭제 ===")
+
+    index = select_prompt_number()
+    if index is None:
+        return
+
+    p = prompts[index]
+    confirm = input(f"\n'{p['title']}' 프롬프트를 정말 삭제할까요? (y/N): ").strip().lower()
+
+    if confirm == "y":
+        prompts.pop(index)
+        print(f"\n'{p['title']}' 프롬프트가 삭제되었습니다.")
+    else:
+        print("\n삭제를 취소했습니다.")
+
+
+# ------------------------------------------------------
+# 보너스2: 조회수 Top 목록
+# ------------------------------------------------------
+
+def show_top_viewed():
+    print("\n=== 조회수 Top 목록 ===")
+
+    if not prompts:
+        print("등록된 프롬프트가 없습니다.")
+        return
+
+    sorted_prompts = sorted(prompts, key=lambda p: p["views"], reverse=True)
+
+    for i, p in enumerate(sorted_prompts, start=1):
+        star = " ⭐" if p["favorite"] else ""
+        print(f"{i}. [{p['category']}] {p['title']}{star} - 조회수 {p['views']}")
+
+    print(f"\n총 {len(sorted_prompts)}개의 프롬프트 (조회수 높은 순)")
+
+
 # ------------------------------------------------------
 # 메인 루프
 # ------------------------------------------------------
@@ -314,6 +439,14 @@ def main():
             save_prompts_json()
         elif choice == "9":
             load_prompts_json()
+        elif choice == "10":
+            export_markdown()
+        elif choice == "11":
+            edit_prompt()
+        elif choice == "12":
+            delete_prompt()
+        elif choice == "13":
+            show_top_viewed()
         else:
             print("잘못된 입력입니다. 다시 선택해주세요.")
 
