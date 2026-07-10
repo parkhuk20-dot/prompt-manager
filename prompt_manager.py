@@ -406,6 +406,21 @@ def save_prompts_json():
     except (OSError, json.JSONDecodeError) as e:
         print(f"저장에 실패했습니다: {e}")
 
+def load_prompts_json():
+    global prompts
+
+    if not os.path.exists(DATA_FILE):
+        print(f"\n'{DATA_FILE}' 파일이 존재하지 않습니다.")
+        return
+
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            loaded = json.load(f)
+        prompts = loaded
+        print(f"\n'{DATA_FILE}'에서 {len(loaded)}개의 프롬프트를 불러왔습니다.")
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"불러오기에 실패했습니다: {e}")
+
 # ------------------------------------------------------
 # 보너스1: 카테고리별 Markdown 내보내기
 # ------------------------------------------------------
