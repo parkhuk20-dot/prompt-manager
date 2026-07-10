@@ -48,6 +48,7 @@ def show_menu():
     print("5. 프롬프트 상세 보기")
     print("6. 즐겨찾기 관리")
     print("7. 즐겨찾기 목록")
+    print("8. Json으로 저장")
     print("0. 종료")
 
 
@@ -249,6 +250,22 @@ def show_favorites():
 
     print(f"\n총 {len(favorites)}개의 즐겨찾기")
 
+# ------------------------------------------------------
+# 보너스1: JSON 저장
+# ------------------------------------------------------
+
+import json
+
+DATA_FILE = "prompts.json"
+
+
+def save_prompts_json():
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(prompts, f, ensure_ascii=False, indent=2)
+        print(f"\n'{DATA_FILE}' 파일에 {len(prompts)}개의 프롬프트를 저장했습니다.")
+    except OSError as e:
+        print(f"저장에 실패했습니다: {e}")
 
 # ------------------------------------------------------
 # 메인 루프
@@ -276,6 +293,8 @@ def main():
             toggle_favorite()
         elif choice == "7":
             show_favorites()
+        elif choice == "8":
+            save_prompts_json()
         else:
             print("잘못된 입력입니다. 다시 선택해주세요.")
 
